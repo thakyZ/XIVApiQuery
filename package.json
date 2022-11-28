@@ -1,0 +1,27 @@
+{
+  "name": "xivapiquery",
+  "version": "1.0.0",
+  "description": "Query the XIV API for a string.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "scripts": {
+    "test": "eslint index.js",
+    "start": "node index.js",
+    "query": "node index.js"
+  },
+  "keywords": [
+    "query",
+    "api",
+    "soup"
+  ],
+  "author": "Neko Boi Nick",
+  "license": "MIT",
+  "dependencies": {
+    "@xivapi/js": "^0.4.1",
+    "cli-progress": "^3.11.2",
+    "strip-json-comments": "^3.1.1"
+  }
+}
