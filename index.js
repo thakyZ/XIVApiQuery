@@ -5,6 +5,7 @@ const fs = require("fs").promises;
 const path = require("path");
 const cliProgress = require('cli-progress');
 const stripJsonComments = require('strip-json-comments');
+const util = require("util");
 
 const config = path.join(__dirname, "config.json");
 const out = path.join(__dirname, "out.json");
@@ -60,6 +61,13 @@ const getString = async (search) => {
   return res;
 };
 
+const displayJson = json => {
+  if (json.Url) {
+    json.Url = `https://xivapi.com${json.Url}`;
+  }
+  console.log(util.inspect(json, {showHidden: false, depth: null, colors: true}));
+};
+
 const run = async () => {
   if (!fsSync.existsSync(config)) {
     console.error({ message: `Config, ${config} does not exist.` });
@@ -78,16 +86,16 @@ const run = async () => {
     console.error({ message: error.message, stack: error.stack });
   }
   try {
-    gotten = JSON.stringify(gotten);
+    gotten = JSON.stringify(gotten, null, 2);
   } catch (error) {
     console.error({ message: error.message, stack: error.stack });
   }
-  console.log(gotten);
   try {
     await fs.writeFile(out, gotten, { encoding: "utf-8", flag: "w", mode: 0o666 });
   } catch (error) {
     console.error({ message: error.message, stack: error.stack });
   }
+  displayJson(JSON.parse(gotten));
 };
 
 run();
