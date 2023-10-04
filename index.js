@@ -9,7 +9,7 @@ const util = require("util");
 
 const config = path.join(__dirname, "config.json");
 const out = path.join(__dirname, "out.json");
-const bar1 = new cliProgress.SingleBar({ hideCursor: true, format: "[{bar}] {percentage}% | Duration: {duration_formatted} | ETA: {eta_formatted} | {value}/{total}", formatTime: cliProgress.formatTime }, cliProgress.Presets.shades_classic);
+let bar1 = undefined;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -25,7 +25,8 @@ const find = async (search, res) => {
       ress = await xiv.data.get(search.class, i.toString());
       bar1.update(i);
     } catch (error) {
-      console.error({ message: error.message, stack: error.stack });
+      console.error(error);
+      break;
     }
     //ress = JSON.parse(ress);
     let resss = ress;
@@ -43,20 +44,17 @@ const find = async (search, res) => {
 };
 
 const getString = async (search) => {
+  bar1 = new cliProgress.SingleBar({ hideCursor: true, format: "[{bar}] {percentage}% | Duration: {duration_formatted} | ETA: {eta_formatted} | {value}/{total}", formatTime: cliProgress.formatTime }, cliProgress.Presets.shades_classic);
   let res;
   try {
     //find item
     res = await xiv.data.list(search.class);
-  } catch (error) {
-    console.error({ message: error.message, stack: error.stack });
-  }
-  try {
     //res = JSON.parse(res);
+    if (res.Pagination.ResultsTotal > 0) {
+      res = await find(search, res);
+    }
   } catch (error) {
-    console.error({ message: error.message, stack: error.stack });
-  }
-  if (res.Pagination.ResultsTotal > 0) {
-    res = await find(search, res);
+    console.error(error);
   }
   return res;
 };
@@ -68,34 +66,24 @@ const displayJson = json => {
   console.log(util.inspect(json, {showHidden: false, depth: null, colors: true}));
 };
 
-const run = async () => {
+async function run() {
   if (!fsSync.existsSync(config)) {
-    console.error({ message: `Config, ${config} does not exist.` });
+    console.error(new Error(`Config, ${config} does not exist.`));
     return;
   }
-  let gottenConfig;
-  try {
-    gottenConfig = await fs.readFile(config, { encoding: "utf-8" });
-  } catch (error) {
-    console.error({ message: error.message, stack: error.stack });
-  }
-  gottenConfig = JSON.parse(stripJsonComments(gottenConfig));
-  try {
-    var gotten = await getString(gottenConfig);
-  } catch (error) {
-    console.error({ message: error.message, stack: error.stack });
-  }
-  try {
-    gotten = JSON.stringify(gotten, null, 2);
-  } catch (error) {
-    console.error({ message: error.message, stack: error.stack });
-  }
-  try {
-    await fs.writeFile(out, gotten, { encoding: "utf-8", flag: "w", mode: 0o666 });
-  } catch (error) {
-    console.error({ message: error.message, stack: error.stack });
-  }
-  displayJson(JSON.parse(gotten));
-};
 
-run();
+  try {
+    let gotten = JSON.stringify(await getString(JSON.parse(stripJsonComments(await fs.readFile(config, { encoding: "utf-8" })))), null, 2);
+
+    if (typeof gotten !== "undefined") {
+      await fs.writeFile(out, gotten, { encoding: "utf-8", flag: "w" });
+      displayJson(JSON.parse(gotten));
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+(async function() {
+  await run();
+})();
